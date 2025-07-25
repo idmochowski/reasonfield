@@ -48,19 +48,20 @@ GOOGLE_CLOUD_PROJECT_ID: "$GOOGLE_CLOUD_PROJECT_ID"
 CORS_ORIGINS: "https://app.reasonfield.com,https://reasonfield-frontend.pages.dev"
 EOF
 
-# Deploy to Cloud Run
+# Deploy to Cloud Run using Cloud Build service account
 echo "🚀 Deploying to Cloud Run..."
 gcloud run deploy $BACKEND_SERVICE_NAME \
     --source . \
     --region $BACKEND_REGION \
     --platform managed \
     --allow-unauthenticated \
-    --port 8000 \
+    --port 8080 \
     --memory 1Gi \
     --cpu 1 \
     --max-instances 10 \
     --timeout 300 \
-    --env-vars-file env.yaml
+    --env-vars-file env.yaml \
+    --service-account=635296697411@cloudbuild.gserviceaccount.com
 
 # Get the service URL
 SERVICE_URL=$(gcloud run services describe $BACKEND_SERVICE_NAME --region=$BACKEND_REGION --format='value(status.url)')
