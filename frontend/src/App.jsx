@@ -29,6 +29,17 @@ function LoginPage() {
         data-size="large"
         data-logo_alignment="left">
       </div>
+      {/* Version indicator */}
+      <div style={{ 
+        position: 'fixed', 
+        bottom: '10px', 
+        right: '10px', 
+        fontSize: '12px', 
+        color: '#666', 
+        fontFamily: 'monospace' 
+      }}>
+        v{import.meta.env.VITE_APP_VERSION || '1.0.0'} • {new Date().toLocaleDateString()}
+      </div>
     </div>
   )
 }

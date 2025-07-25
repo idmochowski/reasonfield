@@ -87,6 +87,7 @@ jobs:
       env:
         VITE_API_BASE_URL: https://api.reasonfield.com
         VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        VITE_APP_VERSION: ${{ github.sha }}
         
     - name: Deploy Frontend to Cloudflare Pages
       run: |
