@@ -85,72 +85,89 @@ echo "✅ Backend deployed successfully!"
 echo "🌐 Service URL: $SERVICE_URL"
 echo "🔗 Custom Domain: https://api.reasonfield.com"
 
-# Update DNS record automatically
+# Update DNS record automatically (non-blocking)
 echo "🔧 Updating DNS record..."
 if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ZONE_ID" ]; then
     echo "📋 DNS Update Configuration:"
     echo "   Zone ID: $CLOUDFLARE_ZONE_ID"
     echo "   Target URL: $(echo $SERVICE_URL | sed 's|https://||')"
     
-    # Get the current DNS record
+    # Get the current DNS record (with error handling)
     echo "🔍 Checking existing DNS record..."
     DNS_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records?name=api.reasonfield.com" \
         -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-        -H "Content-Type: application/json")
+        -H "Content-Type: application/json" 2>/dev/null || echo '{"success":false,"errors":[{"message":"API call failed"}]}')
     
     echo "📡 Cloudflare API Response: $DNS_RESPONSE"
     
-    CURRENT_RECORD=$(echo "$DNS_RESPONSE" | jq -r '.result[0].id // empty')
-    
-    if [ -n "$CURRENT_RECORD" ]; then
-        echo "📝 Updating existing DNS record: $CURRENT_RECORD"
-        # Update existing record
-        UPDATE_RESPONSE=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/$CURRENT_RECORD" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "{
-                \"type\": \"CNAME\",
-                \"name\": \"api.reasonfield.com\",
-                \"content\": \"$(echo $SERVICE_URL | sed 's|https://||')\",
-                \"ttl\": 1,
-                \"proxied\": false
-            }")
+    if echo "$DNS_RESPONSE" | jq -e '.success' > /dev/null 2>&1; then
+        CURRENT_RECORD=$(echo "$DNS_RESPONSE" | jq -r '.result[0].id // empty')
         
-        echo "📡 Update Response: $UPDATE_RESPONSE"
-        
-        if echo "$UPDATE_RESPONSE" | jq -e '.success' > /dev/null; then
-            echo "✅ DNS record updated successfully!"
+        if [ -n "$CURRENT_RECORD" ]; then
+            echo "📝 Updating existing DNS record: $CURRENT_RECORD"
+            # Update existing record
+            UPDATE_RESPONSE=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/$CURRENT_RECORD" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                    \"type\": \"CNAME\",
+                    \"name\": \"api.reasonfield.com\",
+                    \"content\": \"$(echo $SERVICE_URL | sed 's|https://||')\",
+                    \"ttl\": 1,
+                    \"proxied\": false
+                }" 2>/dev/null || echo '{"success":false,"errors":[{"message":"Update failed"}]}')
+            
+            echo "📡 Update Response: $UPDATE_RESPONSE"
+            
+            if echo "$UPDATE_RESPONSE" | jq -e '.success' > /dev/null 2>&1; then
+                echo "✅ DNS record updated successfully!"
+            else
+                echo "❌ DNS record update failed!"
+                echo "📝 Please manually update DNS record for api.reasonfield.com to point to: $(echo $SERVICE_URL | sed 's|https://||')"
+            fi
         else
-            echo "❌ DNS record update failed!"
-            echo "📝 Please manually update DNS record for api.reasonfield.com to point to: $(echo $SERVICE_URL | sed 's|https://||')"
+            echo "📝 Creating new DNS record..."
+            # Create new record
+            CREATE_RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                    \"type\": \"CNAME\",
+                    \"name\": \"api.reasonfield.com\",
+                    \"content\": \"$(echo $SERVICE_URL | sed 's|https://||')\",
+                    \"ttl\": 1,
+                    \"proxied\": false
+                }" 2>/dev/null || echo '{"success":false,"errors":[{"message":"Create failed"}]}')
+            
+            echo "📡 Create Response: $CREATE_RESPONSE"
+            
+            if echo "$CREATE_RESPONSE" | jq -e '.success' > /dev/null 2>&1; then
+                echo "✅ DNS record created successfully!"
+            else
+                echo "❌ DNS record creation failed!"
+                echo "📝 Please manually update DNS record for api.reasonfield.com to point to: $(echo $SERVICE_URL | sed 's|https://||')"
+            fi
         fi
     else
-        echo "📝 Creating new DNS record..."
-        # Create new record
-        CREATE_RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "{
-                \"type\": \"CNAME\",
-                \"name\": \"api.reasonfield.com\",
-                \"content\": \"$(echo $SERVICE_URL | sed 's|https://||')\",
-                \"ttl\": 1,
-                \"proxied\": false
-            }")
-        
-        echo "📡 Create Response: $CREATE_RESPONSE"
-        
-        if echo "$CREATE_RESPONSE" | jq -e '.success' > /dev/null; then
-            echo "✅ DNS record created successfully!"
-        else
-            echo "❌ DNS record creation failed!"
-            echo "📝 Please manually update DNS record for api.reasonfield.com to point to: $(echo $SERVICE_URL | sed 's|https://||')"
-        fi
+        echo "❌ DNS API call failed!"
+        echo "📝 Please manually update DNS record for api.reasonfield.com to point to: $(echo $SERVICE_URL | sed 's|https://||')"
     fi
 else
     echo "⚠️  CLOUDFLARE_API_TOKEN or CLOUDFLARE_ZONE_ID not set - DNS update skipped"
     echo "📝 Please manually update DNS record for api.reasonfield.com to point to: $(echo $SERVICE_URL | sed 's|https://||')"
 fi
+
+# Always show manual instructions
+echo ""
+echo "🔧 Manual DNS Update Instructions:"
+echo "   1. Go to: https://dash.cloudflare.com/"
+echo "   2. Select: reasonfield.com domain"
+echo "   3. Go to: DNS → Records"
+echo "   4. Find CNAME record for 'api'"
+echo "   5. Change target to: $(echo $SERVICE_URL | sed 's|https://||')"
+echo "   6. Save changes"
+echo ""
+echo "⏱️  DNS propagation takes 2-5 minutes"
 
 # Clean up
 rm -f env.yaml
