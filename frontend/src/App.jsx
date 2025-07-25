@@ -6,13 +6,7 @@ function LoginPage() {
   // Check if already logged in
   const navigate = useNavigate();
   
-  // Debug version info
-  useEffect(() => {
-    console.log('=== LOGIN PAGE MOUNTED ===');
-    console.log('App Version:', import.meta.env.VITE_APP_VERSION);
-    console.log('All env vars:', import.meta.env);
-    console.log('Current time:', new Date().toISOString());
-  }, []);
+
   
   useEffect(() => {
     const user = window.localStorage.getItem('rf_user');
@@ -21,7 +15,7 @@ function LoginPage() {
 
   return (
     <div style={{ minHeight: '100vh', width: '100vw', background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-      <h1 style={{ color: '#200048', fontWeight: 800, fontSize: '3rem', marginBottom: '3rem', letterSpacing: '0.03em' }}>🚀 Reasonfield BETA v2 🚀</h1>
+      <h1 style={{ color: '#200048', fontWeight: 800, fontSize: '3rem', marginBottom: '3rem', letterSpacing: '0.03em' }}>Reasonfield BETA</h1>
       {/* Google Sign-In button */}
       <div id="g_id_onload"
         data-client_id={import.meta.env.VITE_GOOGLE_CLIENT_ID}
@@ -43,19 +37,16 @@ function LoginPage() {
         position: 'fixed', 
         bottom: '10px', 
         right: '10px', 
-        fontSize: '16px', 
-        color: '#000', 
+        fontSize: '14px', 
+        color: '#666', 
         fontFamily: 'monospace',
-        backgroundColor: '#fff',
-        padding: '8px 12px',
-        borderRadius: '6px',
-        border: '2px solid #007bff',
-        zIndex: 9999,
-        boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        padding: '4px 8px',
+        borderRadius: '4px',
+        border: '1px solid #ddd',
+        zIndex: 1000
       }}>
-        <div>Version: {import.meta.env.VITE_APP_VERSION ? import.meta.env.VITE_APP_VERSION.substring(0, 7) : 'DEV'}</div>
-        <div>Date: {new Date().toLocaleDateString()}</div>
-        <div>Time: {new Date().toLocaleTimeString()}</div>
+        v{import.meta.env.VITE_APP_VERSION ? import.meta.env.VITE_APP_VERSION.substring(0, 7) : 'DEV'}
       </div>
     </div>
   )

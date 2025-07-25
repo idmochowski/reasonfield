@@ -45,7 +45,7 @@ GOOGLE_CLIENT_SECRET: "$GOOGLE_CLIENT_SECRET"
 GEMINI_API: "$GEMINI_API"
 ALLOWED_EMAILS: "$ALLOWED_EMAILS"
 GOOGLE_CLOUD_PROJECT_ID: "$GOOGLE_CLOUD_PROJECT_ID"
-CORS_ORIGINS: "https://app.reasonfield.com,https://reasonfield-frontend.pages.dev"
+CORS_ORIGINS: "https://app.reasonfield.com,https://main.reasonfield-frontend.pages.dev"
 EOF
 
 # Build container image first
