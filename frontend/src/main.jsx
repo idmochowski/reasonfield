@@ -3,6 +3,12 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
+// Debug app startup
+console.log('=== APP STARTING ===');
+console.log('Environment:', import.meta.env.MODE);
+console.log('API URL:', import.meta.env.VITE_API_BASE_URL);
+alert('App is loading! Check console for debug info.');
+
 // Google credential response handler
 window.handleCredentialResponse = async (response) => {
   try {

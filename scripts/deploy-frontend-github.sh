@@ -26,6 +26,7 @@ fi
 echo "📋 Deployment Configuration:"
 echo "   Project Name: $FRONTEND_PROJECT_NAME"
 echo "   Account ID: $CLOUDFLARE_ACCOUNT_ID"
+echo "   App Version: $VITE_APP_VERSION"
 
 # Verify dist directory exists
 if [ ! -d "dist" ]; then
@@ -54,6 +55,7 @@ zone_name = "reasonfield.com"
 [env.production.vars]
 VITE_API_URL = "https://api.reasonfield.com"
 VITE_GOOGLE_CLIENT_ID = "$VITE_GOOGLE_CLIENT_ID"
+VITE_APP_VERSION = "$VITE_APP_VERSION"
 EOF
 fi
 
