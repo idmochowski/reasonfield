@@ -85,6 +85,46 @@ echo "✅ Backend deployed successfully!"
 echo "🌐 Service URL: $SERVICE_URL"
 echo "🔗 Custom Domain: https://api.reasonfield.com"
 
+# Update DNS record automatically
+echo "🔧 Updating DNS record..."
+if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ZONE_ID" ]; then
+    # Get the current DNS record
+    CURRENT_RECORD=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records?name=api.reasonfield.com" \
+        -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+        -H "Content-Type: application/json" | jq -r '.result[0].id // empty')
+    
+    if [ -n "$CURRENT_RECORD" ]; then
+        # Update existing record
+        curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/$CURRENT_RECORD" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+                \"type\": \"CNAME\",
+                \"name\": \"api.reasonfield.com\",
+                \"content\": \"$(echo $SERVICE_URL | sed 's|https://||')\",
+                \"ttl\": 1,
+                \"proxied\": false
+            }"
+        echo "✅ DNS record updated automatically!"
+    else
+        # Create new record
+        curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+                \"type\": \"CNAME\",
+                \"name\": \"api.reasonfield.com\",
+                \"content\": \"$(echo $SERVICE_URL | sed 's|https://||')\",
+                \"ttl\": 1,
+                \"proxied\": false
+            }"
+        echo "✅ DNS record created automatically!"
+    fi
+else
+    echo "⚠️  CLOUDFLARE_API_TOKEN or CLOUDFLARE_ZONE_ID not set - DNS update skipped"
+    echo "📝 Please manually update DNS record for api.reasonfield.com to point to: $(echo $SERVICE_URL | sed 's|https://||')"
+fi
+
 # Clean up
 rm -f env.yaml
 

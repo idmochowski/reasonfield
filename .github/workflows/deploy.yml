@@ -50,6 +50,8 @@ jobs:
         GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         GEMINI_API: ${{ secrets.GEMINI_API }}
         ALLOWED_EMAILS: ${{ secrets.ALLOWED_EMAILS }}
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
         
     - name: Verify Backend Deployment
       run: |
