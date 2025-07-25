@@ -44,6 +44,8 @@ GOOGLE_CLIENT_ID: "$GOOGLE_CLIENT_ID"
 GOOGLE_CLIENT_SECRET: "$GOOGLE_CLIENT_SECRET"
 GEMINI_API: "$GEMINI_API"
 ALLOWED_EMAILS: "$ALLOWED_EMAILS"
+GOOGLE_CLOUD_PROJECT_ID: "$GOOGLE_CLOUD_PROJECT_ID"
+CORS_ORIGINS: "https://app.reasonfield.com,https://reasonfield-frontend.pages.dev"
 EOF
 
 # Deploy to Cloud Run
@@ -58,9 +60,7 @@ gcloud run deploy $BACKEND_SERVICE_NAME \
     --cpu 1 \
     --max-instances 10 \
     --timeout 300 \
-    --env-vars-file env.yaml \
-    --set-env-vars "GOOGLE_CLOUD_PROJECT_ID=$GOOGLE_CLOUD_PROJECT_ID" \
-    --set-env-vars "CORS_ORIGINS=https://app.reasonfield.com,https://reasonfield-frontend.pages.dev"
+    --env-vars-file env.yaml
 
 # Get the service URL
 SERVICE_URL=$(gcloud run services describe $BACKEND_SERVICE_NAME --region=$BACKEND_REGION --format='value(status.url)')
