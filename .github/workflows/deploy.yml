@@ -99,6 +99,7 @@ jobs:
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         FRONTEND_PROJECT_NAME: ${{ env.FRONTEND_PROJECT_NAME }}
         VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        VITE_APP_VERSION: ${{ github.sha }}
         
     - name: Verify Frontend Deployment
       run: |

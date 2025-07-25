@@ -5,6 +5,13 @@ import { useEffect, useState } from 'react'
 function LoginPage() {
   // Check if already logged in
   const navigate = useNavigate();
+  
+  // Debug version info
+  useEffect(() => {
+    console.log('App Version:', import.meta.env.VITE_APP_VERSION);
+    console.log('All env vars:', import.meta.env);
+  }, []);
+  
   useEffect(() => {
     const user = window.localStorage.getItem('rf_user');
     if (user) navigate('/upload');
@@ -34,11 +41,16 @@ function LoginPage() {
         position: 'fixed', 
         bottom: '10px', 
         right: '10px', 
-        fontSize: '12px', 
-        color: '#666', 
-        fontFamily: 'monospace' 
+        fontSize: '14px', 
+        color: '#333', 
+        fontFamily: 'monospace',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        padding: '5px 8px',
+        borderRadius: '4px',
+        border: '1px solid #ddd',
+        zIndex: 1000
       }}>
-        v{import.meta.env.VITE_APP_VERSION || '1.0.0'} • {new Date().toLocaleDateString()}
+        v{import.meta.env.VITE_APP_VERSION ? import.meta.env.VITE_APP_VERSION.substring(0, 7) : 'dev'} • {new Date().toLocaleDateString()}
       </div>
     </div>
   )
