@@ -85,11 +85,6 @@ jobs:
         VITE_API_BASE_URL: https://api.reasonfield.com
         VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         
-    - name: Set up Cloudflare Wrangler
-      uses: cloudflare/wrangler-action@v3
-      with:
-        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        
     - name: Deploy Frontend to Cloudflare Pages
       run: |
         cd frontend
@@ -99,6 +94,7 @@ jobs:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         FRONTEND_PROJECT_NAME: ${{ env.FRONTEND_PROJECT_NAME }}
+        VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         
     - name: Verify Frontend Deployment
       run: |
