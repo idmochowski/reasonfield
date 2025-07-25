@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from typing import List
 import PyPDF2
 import io
+from datetime import datetime
 
 # Load environment variables from root directory
 load_dotenv('../.env')
@@ -86,12 +87,19 @@ class TokenRequest(BaseModel):
 @app.get("/health")
 async def health_check():
     """Health check endpoint for monitoring and CI/CD verification"""
-    return {
-        "status": "healthy",
-        "service": "reasonfield-backend",
-        "version": "1.0.0",
-        "timestamp": "2024-01-01T00:00:00Z"
-    }
+    try:
+        return {
+            "status": "healthy",
+            "service": "reasonfield-backend",
+            "version": "1.0.0",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
 
 def get_user_email(credential: str) -> str:
     CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
