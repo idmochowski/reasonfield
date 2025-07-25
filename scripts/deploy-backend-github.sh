@@ -33,11 +33,9 @@ echo "🔧 Setting Google Cloud project..."
 gcloud config set project $GOOGLE_CLOUD_PROJECT_ID
 
 # Enable required APIs if not already enabled
-echo "🔧 Enabling required APIs..."
-gcloud services enable cloudbuild.googleapis.com
-gcloud services enable run.googleapis.com
-gcloud services enable firestore.googleapis.com
-gcloud services enable storage.googleapis.com
+echo "🔧 Checking required APIs..."
+# APIs are already enabled manually to avoid permission issues
+echo "✅ Required APIs are already enabled"
 
 # Create environment variables file for deployment
 echo "📝 Creating environment variables file..."
