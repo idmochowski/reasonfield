@@ -33,9 +33,10 @@ if [ ! -d "dist" ]; then
     exit 1
 fi
 
-# Configure Wrangler
+# Configure Wrangler using environment variables
 echo "🔧 Configuring Wrangler..."
-wrangler config --api-token $CLOUDFLARE_API_TOKEN
+export CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN
+export CLOUDFLARE_ACCOUNT_ID=$CLOUDFLARE_ACCOUNT_ID
 
 # Create wrangler.toml if it doesn't exist
 if [ ! -f "wrangler.toml" ]; then
