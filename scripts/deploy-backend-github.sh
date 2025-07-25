@@ -94,14 +94,24 @@ if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ZONE_ID" ]; then
     
     # Get the current DNS record (with error handling)
     echo "🔍 Checking existing DNS record..."
-    DNS_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records?name=api.reasonfield.com" \
+    echo "🔑 Using Zone ID: $CLOUDFLARE_ZONE_ID"
+    echo "🔑 API Token (first 10 chars): ${CLOUDFLARE_API_TOKEN:0:10}..."
+    
+    DNS_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X GET "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records?name=api.reasonfield.com" \
         -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
         -H "Content-Type: application/json" 2>/dev/null || echo '{"success":false,"errors":[{"message":"API call failed"}]}')
     
-    echo "📡 Cloudflare API Response: $DNS_RESPONSE"
+    # Extract HTTP status and response body
+    HTTP_STATUS=$(echo "$DNS_RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+    RESPONSE_BODY=$(echo "$DNS_RESPONSE" | grep -v "HTTP_STATUS:")
     
-    if echo "$DNS_RESPONSE" | jq -e '.success' > /dev/null 2>&1; then
-        CURRENT_RECORD=$(echo "$DNS_RESPONSE" | jq -r '.result[0].id // empty')
+    echo "📡 HTTP Status: $HTTP_STATUS"
+    echo "📡 Response Body: $RESPONSE_BODY"
+    
+    echo "📡 Cloudflare API Response: $RESPONSE_BODY"
+    
+    if echo "$RESPONSE_BODY" | jq -e '.success' > /dev/null 2>&1; then
+        CURRENT_RECORD=$(echo "$RESPONSE_BODY" | jq -r '.result[0].id // empty')
         
         if [ -n "$CURRENT_RECORD" ]; then
             echo "📝 Updating existing DNS record: $CURRENT_RECORD"
@@ -114,7 +124,7 @@ if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ZONE_ID" ]; then
                     \"name\": \"api.reasonfield.com\",
                     \"content\": \"$(echo $SERVICE_URL | sed 's|https://||')\",
                     \"ttl\": 1,
-                    \"proxied\": false
+                    \"proxied\": true
                 }" 2>/dev/null || echo '{"success":false,"errors":[{"message":"Update failed"}]}')
             
             echo "📡 Update Response: $UPDATE_RESPONSE"
@@ -136,7 +146,7 @@ if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ZONE_ID" ]; then
                     \"name\": \"api.reasonfield.com\",
                     \"content\": \"$(echo $SERVICE_URL | sed 's|https://||')\",
                     \"ttl\": 1,
-                    \"proxied\": false
+                    \"proxied\": true
                 }" 2>/dev/null || echo '{"success":false,"errors":[{"message":"Create failed"}]}')
             
             echo "📡 Create Response: $CREATE_RESPONSE"
