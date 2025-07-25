@@ -7,7 +7,7 @@ on:
 
 env:
   BACKEND_SERVICE_NAME: reasonfield-backend
-  BACKEND_REGION: europe-west3
+  BACKEND_REGION: us-central1
   FRONTEND_PROJECT_NAME: reasonfield-frontend
 
 jobs:
