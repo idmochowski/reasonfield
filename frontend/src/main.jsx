@@ -9,7 +9,7 @@ import App from './App.jsx'
 window.handleCredentialResponse = async (response) => {
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-    const res = await fetch(`${apiUrl.replace('https://', 'http://')}/auth/google`, {
+    const res = await fetch(`${apiUrl}/auth/google`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ credential: response.credential })

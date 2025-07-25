@@ -75,7 +75,7 @@ function UploadPage() {
         if (!user || !user.token) return;
 
         const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-        const response = await fetch(`${apiUrl.replace('https://', 'http://')}/files`, {
+        const response = await fetch(`${apiUrl}/files`, {
           headers: {
             'Authorization': `Bearer ${user.token}`
           }
@@ -105,7 +105,7 @@ function UploadPage() {
       const token = user.token;
 
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-              const response = await fetch(`${apiUrl.replace('https://', 'http://')}/files/${encodeURIComponent(filename)}`, {
+              const response = await fetch(`${apiUrl}/files/${encodeURIComponent(filename)}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -150,7 +150,7 @@ function UploadPage() {
         formData.append('file', file);
 
         const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-        const response = await fetch(`${apiUrl.replace('https://', 'http://')}/upload`, {
+        const response = await fetch(`${apiUrl}/upload`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -191,7 +191,7 @@ function UploadPage() {
       const token = user.token;
 
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-              const response = await fetch(`${apiUrl.replace('https://', 'http://')}/generate-report`, {
+              const response = await fetch(`${apiUrl}/generate-report`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
