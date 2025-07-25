@@ -48,10 +48,14 @@ GOOGLE_CLOUD_PROJECT_ID: "$GOOGLE_CLOUD_PROJECT_ID"
 CORS_ORIGINS: "https://app.reasonfield.com,https://reasonfield-frontend.pages.dev"
 EOF
 
-# Deploy to Cloud Run
+# Build container image first
+echo "🔨 Building container image..."
+gcloud builds submit --tag gcr.io/$GOOGLE_CLOUD_PROJECT_ID/$BACKEND_SERVICE_NAME:latest .
+
+# Deploy to Cloud Run using the built image
 echo "🚀 Deploying to Cloud Run..."
 gcloud run deploy $BACKEND_SERVICE_NAME \
-    --source . \
+    --image gcr.io/$GOOGLE_CLOUD_PROJECT_ID/$BACKEND_SERVICE_NAME:latest \
     --region $BACKEND_REGION \
     --platform managed \
     --allow-unauthenticated \
