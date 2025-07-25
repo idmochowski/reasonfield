@@ -24,11 +24,14 @@ jobs:
       with:
         python-version: '3.11'
         
+    - name: Authenticate with Google Cloud
+      run: |
+        echo ${{ secrets.GOOGLE_CLOUD_SA_KEY }} | base64 -d > service-account.json
+        gcloud auth activate-service-account --key-file=service-account.json
+        gcloud config set project ${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}
+        
     - name: Set up Google Cloud CLI
       uses: google-github-actions/setup-gcloud@v2
-      with:
-        service_account_key: ${{ secrets.GOOGLE_CLOUD_SA_KEY }}
-        project_id: ${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}
         
     - name: Configure Docker for gcloud
       run: gcloud auth configure-docker
