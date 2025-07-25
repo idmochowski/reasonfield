@@ -50,18 +50,17 @@ EOF
 
 # Build container image first
 echo "🔨 Building container image..."
-BUILD_ID=$(gcloud builds submit --tag gcr.io/$GOOGLE_CLOUD_PROJECT_ID/$BACKEND_SERVICE_NAME:latest . --format="value(id)" --quiet)
-
-# Wait for build to complete
-echo "⏳ Waiting for build to complete..."
-gcloud builds wait $BUILD_ID
-
-# Check build status
-BUILD_STATUS=$(gcloud builds describe $BUILD_ID --format="value(status)")
-if [ "$BUILD_STATUS" != "SUCCESS" ]; then
-    echo "❌ Build failed with status: $BUILD_STATUS"
-    exit 1
-fi
+gcloud builds submit --tag gcr.io/$GOOGLE_CLOUD_PROJECT_ID/$BACKEND_SERVICE_NAME:latest . --quiet || {
+    echo "⚠️  Build log streaming failed, but build may still be successful. Checking status..."
+    sleep 10
+    LATEST_BUILD=$(gcloud builds list --limit=1 --format="value(id)")
+    BUILD_STATUS=$(gcloud builds describe $LATEST_BUILD --format="value(status)")
+    if [ "$BUILD_STATUS" != "SUCCESS" ]; then
+        echo "❌ Build failed with status: $BUILD_STATUS"
+        exit 1
+    fi
+    echo "✅ Build completed successfully!"
+}
 
 echo "✅ Build completed successfully!"
 
