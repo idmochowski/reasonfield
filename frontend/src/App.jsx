@@ -15,7 +15,7 @@ function LoginPage() {
 
   return (
     <div style={{ minHeight: '100vh', width: '100vw', background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-      <h1 style={{ color: '#200048', fontWeight: 800, fontSize: '3rem', marginBottom: '3rem', letterSpacing: '0.03em' }}>Reasonfield BETA</h1>
+      <h1 style={{ color: '#200048', fontWeight: 800, fontSize: '3rem', marginBottom: '3rem', letterSpacing: '0.03em' }}>🚀 Reasonfield BETA 🚀</h1>
       {/* Google Sign-In button */}
       <div id="g_id_onload"
         data-client_id={import.meta.env.VITE_GOOGLE_CLIENT_ID}
@@ -233,6 +233,33 @@ function UploadPage() {
     <div style={{ minHeight: '100vh', width: '100vw', background: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '4rem' }}>
       <h2 style={{ color: '#200048', fontWeight: 700, fontSize: '2rem', marginBottom: '2rem' }}>Upload your files</h2>
       
+      {/* User Instructions Textbox */}
+      <div style={{ 
+        width: '100%', 
+        maxWidth: 500, 
+        marginBottom: '2rem',
+        background: '#f8f5ff',
+        borderRadius: '8px',
+        padding: '1.5rem',
+        border: '1px solid #e0d5f0'
+      }}>
+        <h3 style={{ color: '#200048', fontWeight: 600, fontSize: '1.1rem', marginBottom: '1rem' }}>How to use this tool:</h3>
+        <div style={{ color: '#4a4a4a', lineHeight: '1.6', fontSize: '0.95rem' }}>
+          <p style={{ marginBottom: '0.75rem' }}>
+            <strong>1. Upload Documents:</strong> Select PDF, TXT, or DOCX files containing text you want to analyze for cognitive biases.
+          </p>
+          <p style={{ marginBottom: '0.75rem' }}>
+            <strong>2. Review Files:</strong> Check that all your documents are uploaded correctly. You can delete files if needed.
+          </p>
+          <p style={{ marginBottom: '0.75rem' }}>
+            <strong>3. Generate Report:</strong> Click "Generate Report" to analyze your documents for cognitive biases using AI.
+          </p>
+          <p style={{ marginBottom: '0' }}>
+            <strong>4. Download Results:</strong> Review the detected biases and download the detailed report for further analysis.
+          </p>
+        </div>
+      </div>
+      
       <input
         type="file"
         accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -287,7 +314,7 @@ function UploadPage() {
         </ul>
       )}
       
-      <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
+      <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', flexDirection: 'column', alignItems: 'center' }}>
         <button
           style={{
             background: '#200048',
@@ -307,6 +334,46 @@ function UploadPage() {
         >
           {generatingReport ? 'Generating Report...' : 'Generate Report'}
         </button>
+        
+        {/* Loading Animation and Disclaimer */}
+        {generatingReport && (
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            marginTop: '1rem',
+            padding: '1.5rem',
+            background: '#f8f5ff',
+            borderRadius: '8px',
+            border: '1px solid #e0d5f0',
+            maxWidth: 400
+          }}>
+            {/* Loading Spinner */}
+            <div style={{
+              width: '40px',
+              height: '40px',
+              border: '4px solid #e0d5f0',
+              borderTop: '4px solid #200048',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              marginBottom: '1rem'
+            }}></div>
+            
+            {/* Disclaimer */}
+            <div style={{ 
+              color: '#4a4a4a', 
+              textAlign: 'center',
+              fontSize: '0.95rem',
+              lineHeight: '1.5'
+            }}>
+              <strong>AI Analysis in Progress...</strong><br />
+              This may take up to a minute.<br />
+              <span style={{ fontSize: '0.85rem', color: '#666' }}>
+                Analyzing your documents for cognitive biases using advanced AI models.
+              </span>
+            </div>
+          </div>
+        )}
         
         {reportData && (
           <button
