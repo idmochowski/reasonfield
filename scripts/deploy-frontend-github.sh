@@ -63,12 +63,12 @@ fi
 echo "🚀 Deploying to Cloudflare Pages..."
 wrangler pages deploy dist \
     --project-name $FRONTEND_PROJECT_NAME \
-    --branch main \
     --commit-dirty=true
 
 echo "✅ Frontend deployed successfully!"
 echo "🌐 Custom Domain: https://app.reasonfield.com"
 echo "🔗 Pages URL: https://$FRONTEND_PROJECT_NAME.pages.dev"
+echo "🔗 Branch URL: https://main.$FRONTEND_PROJECT_NAME.pages.dev"
 
 # Verify deployment
 echo "🔍 Verifying deployment..."

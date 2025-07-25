@@ -21,7 +21,7 @@ function LoginPage() {
 
   return (
     <div style={{ minHeight: '100vh', width: '100vw', background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-      <h1 style={{ color: '#200048', fontWeight: 800, fontSize: '3rem', marginBottom: '3rem', letterSpacing: '0.03em' }}>Reasonfield BETA</h1>
+      <h1 style={{ color: '#200048', fontWeight: 800, fontSize: '3rem', marginBottom: '3rem', letterSpacing: '0.03em' }}>🚀 Reasonfield BETA v2 🚀</h1>
       {/* Google Sign-In button */}
       <div id="g_id_onload"
         data-client_id={import.meta.env.VITE_GOOGLE_CLIENT_ID}
