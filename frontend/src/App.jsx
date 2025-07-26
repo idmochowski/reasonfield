@@ -13,18 +13,45 @@ function LoginPage() {
 
   // Initialize Google Sign-In
   useEffect(() => {
-    if (window.google && window.google.accounts) {
-      window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        callback: window.handleCredentialResponse
-      });
-    }
+    const initializeGoogleSignIn = () => {
+      if (window.google && window.google.accounts) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback: window.handleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true
+        });
+        console.log('Google Sign-In initialized successfully');
+      } else {
+        console.log('Google library not ready, retrying...');
+        setTimeout(initializeGoogleSignIn, 100);
+      }
+    };
+
+    initializeGoogleSignIn();
   }, []);
 
   const handleGoogleSignIn = () => {
+    console.log('Google Sign-In button clicked');
     if (window.google && window.google.accounts) {
-      window.google.accounts.id.prompt();
+      console.log('Triggering Google Sign-In prompt...');
+      try {
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            console.log('Google Sign-In prompt was not displayed or skipped');
+            // Fallback: try to open Google Sign-In in a new window
+            const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+            const redirectUri = window.location.origin;
+            const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=email profile&prompt=select_account`;
+            window.open(googleAuthUrl, '_blank', 'width=500,height=600');
+          }
+        });
+      } catch (error) {
+        console.error('Error triggering Google Sign-In:', error);
+        alert('Google Sign-In failed. Please try refreshing the page or check your browser settings.');
+      }
     } else {
+      console.error('Google library not available');
       alert('Google Sign-In is not available. Please refresh the page.');
     }
   };
