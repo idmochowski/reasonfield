@@ -5,72 +5,55 @@ import { useEffect, useState, useRef } from 'react'
 function LoginPage() {
   // Check if already logged in
   const navigate = useNavigate();
-  const [buttonRendered, setButtonRendered] = useState(false);
-  const buttonContainerRef = useRef(null);
   
   useEffect(() => {
     const user = window.localStorage.getItem('rf_user');
     if (user) navigate('/upload');
   }, [navigate]);
 
-  // Dynamically create Google Sign-In button
+  // Reset and reinitialize Google Sign-In
   useEffect(() => {
-    if (buttonRendered || !buttonContainerRef.current) return;
+    // Clear any existing Google Sign-In state
+    if (window.google && window.google.accounts) {
+      window.google.accounts.id.cancel();
+      window.google.accounts.id.disableAutoSelect();
+    }
 
-    const renderButton = () => {
-      // Clear any existing buttons
-      buttonContainerRef.current.innerHTML = '';
-
-      // Create the onload div
-      const onloadDiv = document.createElement('div');
-      onloadDiv.id = 'g_id_onload';
-      onloadDiv.setAttribute('data-client_id', import.meta.env.VITE_GOOGLE_CLIENT_ID);
-      onloadDiv.setAttribute('data-context', 'signin');
-      onloadDiv.setAttribute('data-ux_mode', 'popup');
-      onloadDiv.setAttribute('data-callback', 'handleCredentialResponse');
-      onloadDiv.setAttribute('data-auto_prompt', 'false');
-
-      // Create the signin div
-      const signinDiv = document.createElement('div');
-      signinDiv.className = 'g_id_signin';
-      signinDiv.setAttribute('data-type', 'standard');
-      signinDiv.setAttribute('data-shape', 'rectangular');
-      signinDiv.setAttribute('data-theme', 'outline');
-      signinDiv.setAttribute('data-text', 'sign_in_with');
-      signinDiv.setAttribute('data-size', 'large');
-      signinDiv.setAttribute('data-logo_alignment', 'left');
-
-      // Append both divs to the container
-      buttonContainerRef.current.appendChild(onloadDiv);
-      buttonContainerRef.current.appendChild(signinDiv);
-
-      // Trigger Google's library to render the button
+    // Small delay to ensure cleanup
+    const timer = setTimeout(() => {
+      // Re-enable auto-select
       if (window.google && window.google.accounts) {
-        window.google.accounts.id.renderButton(signinDiv, {
-          type: 'standard',
-          shape: 'rectangular',
-          theme: 'outline',
-          text: 'sign_in_with',
-          size: 'large',
-          logo_alignment: 'left'
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback: window.handleCredentialResponse
         });
         window.google.accounts.id.prompt();
-        setButtonRendered(true);
-      } else {
-        // If Google library isn't ready, retry after a short delay
-        setTimeout(renderButton, 100);
       }
-    };
+    }, 100);
 
-    renderButton();
-  }, [buttonRendered]);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div style={{ minHeight: '100vh', width: '100vw', background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
       <h1 style={{ color: '#200048', fontWeight: 800, fontSize: '3rem', marginBottom: '3rem', letterSpacing: '0.03em' }}>🚀 Reasonfield BETA 🚀</h1>
       
-      {/* Google Sign-In button container */}
-      <div ref={buttonContainerRef}></div>
+      {/* Google Sign-In button */}
+      <div id="g_id_onload"
+        data-client_id={import.meta.env.VITE_GOOGLE_CLIENT_ID}
+        data-context="signin"
+        data-ux_mode="popup"
+        data-callback="handleCredentialResponse"
+        data-auto_prompt="false">
+      </div>
+      <div className="g_id_signin"
+        data-type="standard"
+        data-shape="rectangular"
+        data-theme="outline"
+        data-text="sign_in_with"
+        data-size="large"
+        data-logo_alignment="left">
+      </div>
       
       {/* Version indicator */}
       <div style={{ 
