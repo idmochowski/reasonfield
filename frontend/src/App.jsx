@@ -37,13 +37,15 @@ function LoginPage() {
       console.log('Triggering Google Sign-In prompt...');
       try {
         window.google.accounts.id.prompt((notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            console.log('Google Sign-In prompt was not displayed or skipped');
-            // Fallback: try to open Google Sign-In in a new window
-            const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-            const redirectUri = window.location.origin;
-            const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=email profile&prompt=select_account`;
-            window.open(googleAuthUrl, '_blank', 'width=500,height=600');
+          if (notification.isNotDisplayed()) {
+            console.log('Google Sign-In prompt was not displayed');
+            alert('Google Sign-In popup was blocked. Please allow popups for this site and try again.');
+          } else if (notification.isSkippedMoment()) {
+            console.log('Google Sign-In prompt was skipped');
+            alert('Google Sign-In was skipped. Please try again.');
+          } else if (notification.isDismissedMoment()) {
+            console.log('Google Sign-In prompt was dismissed');
+            // User dismissed the prompt, no action needed
           }
         });
       } catch (error) {
