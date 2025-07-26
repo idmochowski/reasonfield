@@ -86,7 +86,7 @@ function LoginPage() {
         border: '1px solid #ddd',
         zIndex: 1000
       }}>
-        v{import.meta.env.VITE_APP_VERSION ? import.meta.env.VITE_APP_VERSION.substring(0, 7) : 'DEV'}
+        version: {import.meta.env.VITE_APP_VERSION ? import.meta.env.VITE_APP_VERSION.substring(0, 7) : 'DEV'}
       </div>
     </div>
   )
@@ -269,8 +269,37 @@ function UploadPage() {
     URL.revokeObjectURL(url);
   };
 
+  const handleLogout = () => {
+    window.localStorage.removeItem('rf_user');
+    navigate('/');
+  };
+
   return (
-    <div style={{ minHeight: '100vh', width: '100vw', background: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '4rem' }}>
+    <div style={{ minHeight: '100vh', width: '100vw', background: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '4rem', position: 'relative' }}>
+      {/* Logout button */}
+      <button
+        onClick={handleLogout}
+        style={{
+          position: 'absolute',
+          top: '4rem',
+          right: '2rem',
+          background: '#f44336',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '6px',
+          padding: '0.5rem 1rem',
+          fontSize: '0.9rem',
+          fontWeight: 500,
+          cursor: 'pointer',
+          boxShadow: '0 2px 4px rgba(244,67,54,0.2)',
+          transition: 'background 0.2s',
+        }}
+        onMouseEnter={(e) => e.target.style.background = '#d32f2f'}
+        onMouseLeave={(e) => e.target.style.background = '#f44336'}
+      >
+        Logout
+      </button>
+      
       <h2 style={{ color: '#200048', fontWeight: 700, fontSize: '2rem', marginBottom: '2rem' }}>Upload your files</h2>
       
       {/* User Instructions Textbox */}
