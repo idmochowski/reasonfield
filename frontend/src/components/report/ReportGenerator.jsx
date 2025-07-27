@@ -14,11 +14,25 @@ export const ReportGenerator = ({ onGenerate, generating, disabled = false }) =>
           fontWeight: 600,
           cursor: generating || disabled ? 'not-allowed' : 'pointer',
           boxShadow: '0 2px 8px rgba(32,0,72,0.08)',
-          transition: 'background 0.2s',
+          transition: 'all 0.3s ease',
           opacity: generating || disabled ? 0.7 : 1,
         }}
         onClick={onGenerate}
         disabled={generating || disabled}
+        onMouseEnter={(e) => {
+          if (!generating && !disabled) {
+            e.target.style.background = '#4a148c';
+            e.target.style.transform = 'translateY(-1px)';
+            e.target.style.boxShadow = '0 4px 12px rgba(32,0,72,0.2)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!generating && !disabled) {
+            e.target.style.background = '#200048';
+            e.target.style.transform = 'translateY(0)';
+            e.target.style.boxShadow = '0 2px 8px rgba(32,0,72,0.08)';
+          }
+        }}
       >
         {generating ? 'Generating Report...' : 'Generate Report'}
       </button>

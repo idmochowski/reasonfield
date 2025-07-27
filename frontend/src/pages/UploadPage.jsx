@@ -93,19 +93,19 @@ export const UploadPage = () => {
           position: 'absolute',
           top: '4rem',
           right: '2rem',
-          background: '#f44336',
+          background: '#d32f2f',
           color: '#fff',
           border: 'none',
           borderRadius: '6px',
           padding: '0.5rem 1rem',
           fontSize: '0.9rem',
-          fontWeight: 500,
+          fontWeight: 600,
           cursor: 'pointer',
-          boxShadow: '0 2px 4px rgba(244,67,54,0.2)',
+          boxShadow: '0 1px 4px rgba(211,47,47,0.2)',
           transition: 'background 0.2s',
         }}
-        onMouseEnter={(e) => e.target.style.background = '#d32f2f'}
-        onMouseLeave={(e) => e.target.style.background = '#f44336'}
+        onMouseEnter={(e) => e.target.style.background = '#b71c1c'}
+        onMouseLeave={(e) => e.target.style.background = '#d32f2f'}
       >
         Logout
       </button>

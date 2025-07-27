@@ -53,7 +53,7 @@ export const FileUpload = ({ onFileChange, disabled = false }) => {
           📁
         </div>
         <div>
-          {disabled ? 'Uploading...' : 'Choose Files or Drag & Drop'}
+          {disabled ? 'Uploading...' : 'Choose Files'}
         </div>
         <div style={{ 
           fontSize: '0.9rem', 
