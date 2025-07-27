@@ -109,63 +109,95 @@ async def health_check():
 def get_user_email(credential: str) -> str:
     """Extract user email from Google ID token"""
     CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+    if not CLIENT_ID:
+        raise ValueError("GOOGLE_CLIENT_ID environment variable is required")
     idinfo = id_token.verify_oauth2_token(credential, grequests.Request(), CLIENT_ID)
     return idinfo["email"]
 
 def is_email_allowed(email: str) -> bool:
-    """Check if user email is in allowed list"""
-    allowed_emails = os.getenv("ALLOWED_EMAILS", "").split(",")
-    return email in allowed_emails
+    """Check if user email is allowed using Firestore"""
+    docs = db.collection("allowed_emails").where("email", "==", email).stream()
+    return any(True for _ in docs)
 
 async def get_current_user_email(authorization: str = Header(None)):
     """Get current user email from Authorization header"""
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Invalid authorization header")
-    
-    credential = authorization.replace("Bearer ", "")
-    user_email = get_user_email(credential)
-    
-    if not is_email_allowed(user_email):
+    if not authorization or not authorization.startswith('Bearer '):
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+    token = authorization.split(' ', 1)[1]
+    email = get_user_email(token)
+    if not is_email_allowed(email):
         raise HTTPException(status_code=403, detail="Email not allowed")
-    
-    return user_email
+    return email
 
 # =============================================================================
 # BIAS ANALYSIS FUNCTIONS
 # =============================================================================
 
 def get_bias_definitions() -> dict:
-    """Load bias definitions from JSON file"""
-    try:
-        definitions_path = os.path.join(BIAS_DEFINITIONS_DIRECTORY, BIAS_DEFINITIONS_FILENAME)
-        with open(definitions_path, 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        raise HTTPException(status_code=500, detail="Bias definitions file not found")
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=500, detail="Invalid bias definitions file")
+    """Download bias definitions JSON from GCS"""
+    bucket = storage_client.bucket(BUCKET_NAME)
+    blob = bucket.blob(f"{BIAS_DEFINITIONS_DIRECTORY}/{BIAS_DEFINITIONS_FILENAME}")
+    
+    if not blob.exists():
+        raise HTTPException(status_code=404, detail=f"Bias definitions file not found: {BIAS_DEFINITIONS_FILENAME}")
+    
+    content = blob.download_as_text()
+    return json.loads(content)
 
 def get_user_files_content(user_email: str) -> str:
-    """Get content from all user's uploaded files"""
+    """Get all user files and combine their content"""
     bucket = storage_client.bucket(BUCKET_NAME)
     blobs = bucket.list_blobs(prefix=f"uploads/{user_email}/")
     
-    all_content = []
+    combined_content = ""
     
     for blob in blobs:
         if blob.name.endswith('/'):
             continue
-            
+        
+        filename = blob.name.split('/')[-1]
+        
         try:
-            # Download file content
-            content = blob.download_as_text()
-            filename = blob.name.split('/')[-1]
-            all_content.append(f"=== FILE: {filename} ===\n{content}\n")
+            if filename.endswith('.txt'):
+                # Handle text files
+                content = blob.download_as_text()
+                combined_content += f"\n\n=== FILE: {filename} ===\n{content}\n"
+                
+            elif filename.endswith('.pdf'):
+                # Handle PDF files
+                pdf_content = blob.download_as_bytes()
+                pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_content))
+                
+                text_content = ""
+                for page_num, page in enumerate(pdf_reader.pages):
+                    try:
+                        page_text = page.extract_text()
+                        if page_text.strip():
+                            text_content += f"\n--- Page {page_num + 1} ---\n{page_text}\n"
+                    except Exception as e:
+                        print(f"Error extracting text from page {page_num + 1} of {filename}: {e}")
+                        continue
+                
+                if text_content.strip():
+                    combined_content += f"\n\n=== FILE: {filename} ===\n{text_content}\n"
+                else:
+                    print(f"Warning: No text extracted from PDF {filename}")
+                    
+            elif filename.endswith('.docx'):
+                # Handle DOCX files (basic text extraction)
+                try:
+                    content = blob.download_as_text()
+                    combined_content += f"\n\n=== FILE: {filename} ===\n{content}\n"
+                except Exception as e:
+                    print(f"Error reading DOCX {filename}: {e}")
+                    # For DOCX, we might need a more sophisticated approach
+                    combined_content += f"\n\n=== FILE: {filename} ===\n[DOCX file - content extraction not fully supported]\n"
+                    
         except Exception as e:
-            print(f"Error reading file {blob.name}: {e}")
+            print(f"Error processing {filename}: {e}")
             continue
     
-    return "\n".join(all_content)
+    return combined_content
 
 def generate_bias_report(bias_definitions: dict, user_files_content: str) -> BiasReport:
     """Generate bias report using Gemini API"""
