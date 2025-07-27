@@ -10,9 +10,10 @@ import { ReportDownload } from '../components/report/ReportDownload.jsx';
 import { ReportDisplay } from '../components/report/ReportDisplay.jsx';
 import { StatusMessage } from '../components/common/StatusMessage.jsx';
 import { VersionIndicator } from '../components/common/VersionIndicator.jsx';
+import { LoadingSpinner } from '../components/common/LoadingSpinner.jsx';
 
 export const UploadPage = () => {
-  const { user, logout, requireAuth } = useAuth();
+  const { user, loading: authLoading, logout, requireAuth } = useAuth();
   const token = user?.token;
   
   const {
@@ -32,10 +33,12 @@ export const UploadPage = () => {
     downloadReport
   } = useReportGeneration(token);
 
-  // Check authentication on mount
+  // Check authentication on mount (only after auth is loaded)
   useEffect(() => {
-    requireAuth();
-  }, []);
+    if (!authLoading) {
+      requireAuth();
+    }
+  }, [authLoading, requireAuth]);
 
   const handleGenerateReport = async () => {
     const result = await generateReport(files.length);
@@ -51,6 +54,26 @@ export const UploadPage = () => {
   const handleLogout = () => {
     logout();
   };
+
+  // Show loading spinner while auth is loading
+  if (authLoading) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        width: '100vw', 
+        background: '#fff', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        justifyContent: 'center', 
+        alignItems: 'center' 
+      }}>
+        <LoadingSpinner size={60} />
+        <div style={{ marginTop: '1rem', color: '#200048', fontSize: '1.1rem' }}>
+          Loading...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ 

@@ -17,10 +17,14 @@ window.handleCredentialResponse = async (response) => {
       throw new Error(err.detail || 'Login failed');
     }
     const data = await res.json();
-    // Store user info in localStorage
-    window.localStorage.setItem('rf_user', JSON.stringify({ ...data, token: response.credential }));
-    // Redirect to upload page
-    window.location = '/upload';
+    
+    // Store user info in localStorage using the new service
+    const fullUserData = { ...data, token: response.credential };
+    window.localStorage.setItem('rf_user', JSON.stringify(fullUserData));
+    
+    // Use React Router navigation instead of window.location
+    // This will be handled by the LoginPage component
+    window.location.href = '/upload';
   } catch (err) {
     alert('Login failed: ' + err.message);
   }

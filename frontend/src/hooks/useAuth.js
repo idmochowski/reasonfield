@@ -47,8 +47,12 @@ export const useAuth = () => {
     return user?.token;
   };
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated (only when not loading)
   const requireAuth = () => {
+    if (loading) {
+      return true; // Still loading, don't redirect yet
+    }
+    
     if (!isAuthenticated()) {
       navigate('/');
       return false;
