@@ -8,12 +8,12 @@ export const GoogleSignIn = () => {
     const initializeGoogleSignIn = () => {
       if (window.google && window.google.accounts && buttonRef.current) {
         // Clear any existing state to prevent conflicts
-        try {
-          window.google.accounts.id.cancel();
-          window.google.accounts.id.disableAutoSelect();
-        } catch (error) {
-          console.log('Clearing previous GIS state...');
-        }
+                        try {
+                  window.google.accounts.id.cancel();
+                  window.google.accounts.id.disableAutoSelect();
+                } catch (error) {
+                  // Silent cleanup
+                }
 
         // Initialize Google Identity Services
         window.google.accounts.id.initialize({
@@ -33,14 +33,14 @@ export const GoogleSignIn = () => {
             shape: 'rectangular',
             logo_alignment: 'left'
           });
-          console.log('Google Sign-In button rendered successfully');
+
         } catch (error) {
           console.error('Error rendering Google Sign-In button:', error);
           // Retry after a short delay
           setTimeout(initializeGoogleSignIn, 100);
         }
       } else {
-        console.log('Google library or button container not ready, retrying...');
+
         setTimeout(initializeGoogleSignIn, 100);
       }
     };
@@ -54,7 +54,7 @@ export const GoogleSignIn = () => {
         try {
           window.google.accounts.id.cancel();
         } catch (error) {
-          console.log('Cleanup completed');
+
         }
       }
     };

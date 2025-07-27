@@ -25,19 +25,16 @@ export const reportService = {
   // Download report as PDF
   async downloadPDFReport(token) {
     try {
-      console.log('Starting PDF download...');
-      console.log('API URL:', `${apiClient.baseURL}${ENDPOINTS.GENERATE_PDF_REPORT}`);
-      console.log('Token:', token ? 'Present' : 'Missing');
+      // Get client's local time in ISO format
+      const clientTime = new Date().toISOString();
       
       const response = await fetch(`${apiClient.baseURL}${ENDPOINTS.GENERATE_PDF_REPORT}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Client-Time': clientTime,
         },
       });
-      
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -47,8 +44,6 @@ export const reportService = {
       
       // Get the PDF blob
       const pdfBlob = await response.blob();
-      console.log('PDF blob size:', pdfBlob.size);
-      console.log('PDF blob type:', pdfBlob.type);
       
       // Create download link
       const url = URL.createObjectURL(pdfBlob);
@@ -65,14 +60,12 @@ export const reportService = {
         }
       }
       
-      console.log('Downloading file:', filename);
       link.download = filename;
       link.click();
       
       // Clean up
       URL.revokeObjectURL(url);
       
-      console.log('PDF download completed successfully');
       return { success: true };
     } catch (error) {
       console.error('PDF download failed:', error);

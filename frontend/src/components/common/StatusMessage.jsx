@@ -6,7 +6,7 @@ export const StatusMessage = ({ message, type = 'info', autoDismiss = true, dism
       const timer = setTimeout(() => {
         // This would need to be handled by parent component
         // For now, we'll just log that it should be dismissed
-        console.log('Status message should be dismissed');
+    
       }, dismissTime);
       
       return () => clearTimeout(timer);
