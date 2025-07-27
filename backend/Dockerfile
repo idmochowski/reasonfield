@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bullseye
 
 # Set working directory
 WORKDIR /app
@@ -16,7 +16,6 @@ RUN apt-get update && apt-get install -y \
     shared-mime-info \
     # Additional dependencies for better compatibility
     libglib2.0-0 \
-    libgobject-2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
