@@ -96,9 +96,8 @@ export const useFileUpload = (token) => {
     }
   };
 
-  // Handle file input change
-  const handleFileChange = (event) => {
-    const selectedFiles = Array.from(event.target.files);
+  // Handle file input change - now accepts files array directly
+  const handleFileChange = (selectedFiles) => {
     uploadFiles(selectedFiles);
   };
 
