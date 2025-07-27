@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth.js';
 import { useFileUpload } from '../hooks/useFileUpload.js';
 import { useReportGeneration } from '../hooks/useReportGeneration.js';
@@ -11,10 +11,12 @@ import { ReportDisplay } from '../components/report/ReportDisplay.jsx';
 import { StatusMessage } from '../components/common/StatusMessage.jsx';
 import { VersionIndicator } from '../components/common/VersionIndicator.jsx';
 import { LoadingSpinner } from '../components/common/LoadingSpinner.jsx';
+import { reportService } from '../services/reportService.js';
 
 export const UploadPage = () => {
   const { user, loading: authLoading, logout, requireAuth } = useAuth();
   const token = user?.token;
+  const [pdfStatus, setPdfStatus] = useState('');
   
   const {
     files,
@@ -53,11 +55,14 @@ export const UploadPage = () => {
 
   const handleDownloadPDF = async () => {
     try {
-      const { reportService } = await import('../services/reportService.js');
+      setPdfStatus('Generating PDF...');
       await reportService.downloadPDFReport(token);
+      setPdfStatus('PDF downloaded successfully!');
+      setTimeout(() => setPdfStatus(''), 3000);
     } catch (error) {
       console.error('PDF download failed:', error);
-      // You could add a status message here to show the error
+      setPdfStatus(`PDF download failed: ${error.message}`);
+      setTimeout(() => setPdfStatus(''), 5000);
     }
   };
 
@@ -132,6 +137,13 @@ export const UploadPage = () => {
         message={uploadStatus} 
         type={uploadStatus.includes('Error') ? 'error' : 'success'} 
       />
+      
+      {pdfStatus && (
+        <StatusMessage 
+          message={pdfStatus} 
+          type={pdfStatus.includes('failed') ? 'error' : 'success'} 
+        />
+      )}
       
       <FileList 
         files={files} 
