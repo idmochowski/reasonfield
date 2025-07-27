@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from 'react'
 function LoginPage() {
   // Check if already logged in
   const navigate = useNavigate();
+  const [googleAuth, setGoogleAuth] = useState(null);
   
   useEffect(() => {
     const user = window.localStorage.getItem('rf_user');
@@ -13,48 +14,61 @@ function LoginPage() {
 
   // Initialize Google Sign-In
   useEffect(() => {
-    const initializeGoogleSignIn = () => {
-      if (window.google && window.google.accounts) {
-        window.google.accounts.id.initialize({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-          callback: window.handleCredentialResponse,
-          auto_select: false,
-          cancel_on_tap_outside: true
+    const initGoogleAuth = () => {
+      if (window.gapi && window.gapi.auth2) {
+        window.gapi.auth2.init({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID
+        }).then((auth2) => {
+          setGoogleAuth(auth2);
+          console.log('Google Sign-In initialized successfully');
+        }).catch((error) => {
+          console.error('Failed to initialize Google Sign-In:', error);
         });
-        console.log('Google Sign-In initialized successfully');
       } else {
-        console.log('Google library not ready, retrying...');
-        setTimeout(initializeGoogleSignIn, 100);
+        // Retry if gapi is not ready yet
+        setTimeout(initGoogleAuth, 100);
       }
     };
 
-    initializeGoogleSignIn();
+    initGoogleAuth();
   }, []);
 
   const handleGoogleSignIn = () => {
-    console.log('Google Sign-In button clicked');
-    if (window.google && window.google.accounts) {
-      console.log('Triggering Google Sign-In prompt...');
-      try {
-        window.google.accounts.id.prompt((notification) => {
-          if (notification.isNotDisplayed()) {
-            console.log('Google Sign-In prompt was not displayed');
-            alert('Google Sign-In popup was blocked. Please allow popups for this site and try again.');
-          } else if (notification.isSkippedMoment()) {
-            console.log('Google Sign-In prompt was skipped');
-            alert('Google Sign-In was skipped. Please try again.');
-          } else if (notification.isDismissedMoment()) {
-            console.log('Google Sign-In prompt was dismissed');
-            // User dismissed the prompt, no action needed
-          }
-        });
-      } catch (error) {
-        console.error('Error triggering Google Sign-In:', error);
-        alert('Google Sign-In failed. Please try refreshing the page or check your browser settings.');
-      }
+    if (googleAuth) {
+      googleAuth.signIn().then((googleUser) => {
+        const idToken = googleUser.getAuthResponse().id_token;
+        const profile = googleUser.getBasicProfile();
+        
+        // Send the ID token to your backend
+        handleCredentialResponse({ credential: idToken });
+      }).catch((error) => {
+        console.error('Google Sign-In failed:', error);
+        alert('Google Sign-In failed. Please try again.');
+      });
     } else {
-      console.error('Google library not available');
-      alert('Google Sign-In is not available. Please refresh the page.');
+      alert('Google Sign-In is not ready. Please refresh the page.');
+    }
+  };
+
+  const handleCredentialResponse = async (response) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+      const res = await fetch(`${apiUrl}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: response.credential })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Login failed');
+      }
+      const data = await res.json();
+      // Store user info in localStorage
+      window.localStorage.setItem('rf_user', JSON.stringify({ ...data, token: response.credential }));
+      // Redirect to upload page
+      window.location = '/upload';
+    } catch (err) {
+      alert('Login failed: ' + err.message);
     }
   };
 
@@ -62,7 +76,10 @@ function LoginPage() {
     <div style={{ minHeight: '100vh', width: '100vw', background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
       <h1 style={{ color: '#200048', fontWeight: 800, fontSize: '3rem', marginBottom: '3rem', letterSpacing: '0.03em' }}>🚀 Reasonfield BETA 🚀</h1>
       
-      {/* Custom Google Sign-In button */}
+      {/* Google Sign-In button */}
+      <div className="g-signin2" data-onsuccess="onSignIn"></div>
+      
+      {/* Custom fallback button if g-signin2 doesn't work */}
       <button
         onClick={handleGoogleSignIn}
         style={{
@@ -81,7 +98,8 @@ function LoginPage() {
           boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
           transition: 'all 0.2s ease',
           minWidth: '240px',
-          height: '40px'
+          height: '40px',
+          marginTop: '1rem'
         }}
         onMouseEnter={(e) => {
           e.target.style.boxShadow = '0 2px 6px rgba(0,0,0,0.12)';
@@ -100,7 +118,7 @@ function LoginPage() {
             <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
           </g>
         </svg>
-        Sign in with Google
+        Sign in with Google (Fallback)
       </button>
       
       {/* Version indicator */}
