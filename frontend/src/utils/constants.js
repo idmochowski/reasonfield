@@ -20,6 +20,7 @@ export const ENDPOINTS = {
   UPLOAD: '/upload',
   FILES: '/files',
   GENERATE_REPORT: '/generate-report',
+  GENERATE_PDF_REPORT: '/generate-report/pdf',
   HEALTH: '/health'
 };
 

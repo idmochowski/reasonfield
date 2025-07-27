@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel
 from google.oauth2 import id_token
 from google.auth.transport import requests as grequests
@@ -101,91 +102,70 @@ async def health_check():
             "timestamp": datetime.now().isoformat()
         }
 
+# =============================================================================
+# AUTHENTICATION FUNCTIONS
+# =============================================================================
+
 def get_user_email(credential: str) -> str:
+    """Extract user email from Google ID token"""
     CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-    if not CLIENT_ID:
-        raise ValueError("GOOGLE_CLIENT_ID environment variable is required")
     idinfo = id_token.verify_oauth2_token(credential, grequests.Request(), CLIENT_ID)
     return idinfo["email"]
 
 def is_email_allowed(email: str) -> bool:
-    docs = db.collection("allowed_emails").where("email", "==", email).stream()
-    return any(True for _ in docs)
+    """Check if user email is in allowed list"""
+    allowed_emails = os.getenv("ALLOWED_EMAILS", "").split(",")
+    return email in allowed_emails
 
 async def get_current_user_email(authorization: str = Header(None)):
-    if not authorization or not authorization.startswith('Bearer '):
-        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
-    token = authorization.split(' ', 1)[1]
-    email = get_user_email(token)
-    if not is_email_allowed(email):
+    """Get current user email from Authorization header"""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    
+    credential = authorization.replace("Bearer ", "")
+    user_email = get_user_email(credential)
+    
+    if not is_email_allowed(user_email):
         raise HTTPException(status_code=403, detail="Email not allowed")
-    return email
+    
+    return user_email
+
+# =============================================================================
+# BIAS ANALYSIS FUNCTIONS
+# =============================================================================
 
 def get_bias_definitions() -> dict:
-    """Download bias definitions JSON from GCS"""
-    bucket = storage_client.bucket(BUCKET_NAME)
-    blob = bucket.blob(f"{BIAS_DEFINITIONS_DIRECTORY}/{BIAS_DEFINITIONS_FILENAME}")
-    
-    if not blob.exists():
-        raise HTTPException(status_code=404, detail=f"Bias definitions file not found: {BIAS_DEFINITIONS_FILENAME}")
-    
-    content = blob.download_as_text()
-    return json.loads(content)
+    """Load bias definitions from JSON file"""
+    try:
+        definitions_path = os.path.join(BIAS_DEFINITIONS_DIRECTORY, BIAS_DEFINITIONS_FILENAME)
+        with open(definitions_path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        raise HTTPException(status_code=500, detail="Bias definitions file not found")
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="Invalid bias definitions file")
 
 def get_user_files_content(user_email: str) -> str:
-    """Get all user files and combine their content"""
+    """Get content from all user's uploaded files"""
     bucket = storage_client.bucket(BUCKET_NAME)
     blobs = bucket.list_blobs(prefix=f"uploads/{user_email}/")
     
-    combined_content = ""
+    all_content = []
     
     for blob in blobs:
         if blob.name.endswith('/'):
             continue
-        
-        filename = blob.name.split('/')[-1]
-        
+            
         try:
-            if filename.endswith('.txt'):
-                # Handle text files
-                content = blob.download_as_text()
-                combined_content += f"\n\n=== FILE: {filename} ===\n{content}\n"
-                
-            elif filename.endswith('.pdf'):
-                # Handle PDF files
-                pdf_content = blob.download_as_bytes()
-                pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_content))
-                
-                text_content = ""
-                for page_num, page in enumerate(pdf_reader.pages):
-                    try:
-                        page_text = page.extract_text()
-                        if page_text.strip():
-                            text_content += f"\n--- Page {page_num + 1} ---\n{page_text}\n"
-                    except Exception as e:
-                        print(f"Error extracting text from page {page_num + 1} of {filename}: {e}")
-                        continue
-                
-                if text_content.strip():
-                    combined_content += f"\n\n=== FILE: {filename} ===\n{text_content}\n"
-                else:
-                    print(f"Warning: No text extracted from PDF {filename}")
-                    
-            elif filename.endswith('.docx'):
-                # Handle DOCX files (basic text extraction)
-                try:
-                    content = blob.download_as_text()
-                    combined_content += f"\n\n=== FILE: {filename} ===\n{content}\n"
-                except Exception as e:
-                    print(f"Error reading DOCX {filename}: {e}")
-                    # For DOCX, we might need a more sophisticated approach
-                    combined_content += f"\n\n=== FILE: {filename} ===\n[DOCX file - content extraction not fully supported]\n"
-                    
+            # Download file content
+            content = blob.download_as_text()
+            filename = blob.name.split('/')[-1]
+            all_content.append(f"=== FILE: {filename} ===\n{content}\n")
         except Exception as e:
-            print(f"Error processing {filename}: {e}")
+            print(f"Error reading file {blob.name}: {e}")
             continue
     
-    return combined_content
+    return "\n".join(all_content)
 
 def generate_bias_report(bias_definitions: dict, user_files_content: str) -> BiasReport:
     """Generate bias report using Gemini API"""
@@ -251,6 +231,184 @@ def generate_bias_report(bias_definitions: dict, user_files_content: str) -> Bia
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
+
+def generate_pdf_from_report_data(bias_report: BiasReport) -> bytes:
+    """Generate PDF from report data using HTML-to-PDF conversion"""
+    try:
+        from weasyprint import HTML
+        
+        # Format the analysis date
+        analysis_date = bias_report.metadata.get('processed_at', 'Unknown')
+        if analysis_date != 'Unknown':
+            try:
+                # Try to parse and format the date
+                from datetime import datetime
+                parsed_date = datetime.fromisoformat(analysis_date.replace('Z', '+00:00'))
+                analysis_date = parsed_date.strftime('%B %d, %Y at %I:%M %p')
+            except:
+                pass
+        
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                @page {{
+                    margin: 1in;
+                    size: A4;
+                }}
+                body {{
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    margin: 0;
+                    padding: 0;
+                }}
+                .header {{
+                    background: linear-gradient(135deg, #200048 0%, #4a148c 100%);
+                    color: white;
+                    padding: 40px 30px;
+                    text-align: center;
+                    border-radius: 12px;
+                    margin-bottom: 30px;
+                    box-shadow: 0 4px 12px rgba(32, 0, 72, 0.3);
+                }}
+                .header h1 {{
+                    margin: 0;
+                    font-size: 32px;
+                    font-weight: bold;
+                }}
+                .header h2 {{
+                    margin: 10px 0 0 0;
+                    font-size: 20px;
+                    font-weight: 300;
+                    opacity: 0.9;
+                }}
+                .summary {{
+                    background: #f8f5ff;
+                    padding: 25px;
+                    border-radius: 12px;
+                    border-left: 6px solid #200048;
+                    margin-bottom: 30px;
+                    box-shadow: 0 2px 8px rgba(32, 0, 72, 0.1);
+                }}
+                .summary h3 {{
+                    color: #200048;
+                    margin-top: 0;
+                    font-size: 20px;
+                }}
+                .stats {{
+                    background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+                    padding: 20px;
+                    border-radius: 12px;
+                    margin-bottom: 30px;
+                    text-align: center;
+                    border: 2px solid #4caf50;
+                }}
+                .stats strong {{
+                    color: #2e7d32;
+                    font-size: 16px;
+                }}
+                .bias-item {{
+                    background: #fff;
+                    padding: 25px;
+                    border-radius: 12px;
+                    border: 2px solid #e0d6ff;
+                    margin-bottom: 25px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                    page-break-inside: avoid;
+                }}
+                .bias-title {{
+                    color: #200048;
+                    font-size: 20px;
+                    font-weight: bold;
+                    margin-bottom: 15px;
+                    border-bottom: 2px solid #e0d6ff;
+                    padding-bottom: 10px;
+                }}
+                .bias-field {{
+                    margin-bottom: 12px;
+                }}
+                .bias-field strong {{
+                    color: #200048;
+                    font-weight: 600;
+                }}
+                .section-title {{
+                    color: #200048;
+                    font-size: 24px;
+                    font-weight: bold;
+                    margin: 30px 0 20px 0;
+                    border-bottom: 3px solid #200048;
+                    padding-bottom: 10px;
+                }}
+                .footer {{
+                    margin-top: 50px;
+                    text-align: center;
+                    color: #666;
+                    font-size: 12px;
+                    border-top: 1px solid #e0e0e0;
+                    padding-top: 20px;
+                }}
+                .no-biases {{
+                    background: #fff3cd;
+                    border: 1px solid #ffeaa7;
+                    color: #856404;
+                    padding: 20px;
+                    border-radius: 8px;
+                    text-align: center;
+                    font-style: italic;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>🚀 REASONFIELD</h1>
+                <h2>Bias Analysis Report</h2>
+            </div>
+            
+            <div class="stats">
+                <strong>Total Biases Found:</strong> {len(bias_report.detected_biases)}<br>
+                <strong>Analysis Date:</strong> {analysis_date}<br>
+                <strong>Model Used:</strong> {bias_report.metadata.get('model_used', 'Gemini 2.5 Pro')}
+            </div>
+            
+            <div class="summary">
+                <h3>Executive Summary</h3>
+                <p>{bias_report.summary}</p>
+            </div>
+            
+            <h3 class="section-title">Detected Biases</h3>
+            {''.join([f'''
+            <div class="bias-item">
+                <div class="bias-title">{bias.bias_name} - {bias.filename}</div>
+                <div class="bias-field"><strong>Context:</strong> {bias.context}</div>
+                <div class="bias-field"><strong>Why it occurs:</strong> {bias.argumentation}</div>
+                <div class="bias-field"><strong>Consequence:</strong> {bias.consequence}</div>
+                <div class="bias-field"><strong>Countermeasure:</strong> {bias.countermeasure}</div>
+            </div>
+            ''' for bias in bias_report.detected_biases]) if bias_report.detected_biases else '''
+            <div class="no-biases">
+                <strong>No biases detected!</strong><br>
+                The analysis found no cognitive biases in the provided documents.
+            </div>
+            '''}
+            
+            <div class="footer">
+                Generated by Reasonfield AI | {datetime.now().strftime('%B %d, %Y at %I:%M %p')}
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Convert HTML to PDF using WeasyPrint
+        pdf_bytes = HTML(string=html_content).write_pdf()
+        return pdf_bytes
+        
+    except ImportError:
+        raise HTTPException(status_code=500, detail="WeasyPrint not available for PDF generation")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating PDF: {str(e)}")
 
 # =============================================================================
 # API ENDPOINTS
@@ -328,6 +486,38 @@ async def generate_report(user_email: str = Depends(get_current_user_email)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
 
+@app.post("/generate-report/pdf")
+async def generate_pdf_report(user_email: str = Depends(get_current_user_email)):
+    """Generate PDF report for user's uploaded files"""
+    try:
+        # Get bias definitions
+        bias_definitions = get_bias_definitions()
+        
+        # Get user files content
+        user_files_content = get_user_files_content(user_email)
+        
+        if not user_files_content.strip():
+            raise HTTPException(status_code=400, detail="No readable files found for analysis")
+        
+        # Generate report
+        report = generate_bias_report(bias_definitions, user_files_content)
+        
+        # Generate PDF from report data
+        pdf_bytes = generate_pdf_from_report_data(report)
+        
+        # Return PDF file
+        filename = f"bias-report-{datetime.now().strftime('%Y%m%d-%H%M%S')}.pdf"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating PDF report: {str(e)}")
+
 @app.post("/auth/google")
 def google_auth(token_req: TokenRequest):
     try:
@@ -343,4 +533,3 @@ def google_auth(token_req: TokenRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
-# Trigger rebuild

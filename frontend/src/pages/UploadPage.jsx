@@ -6,7 +6,7 @@ import { InstructionsBox } from '../components/upload/InstructionsBox.jsx';
 import { FileUpload } from '../components/upload/FileUpload.jsx';
 import { FileList } from '../components/upload/FileList.jsx';
 import { ReportGenerator } from '../components/report/ReportGenerator.jsx';
-import { ReportDownload } from '../components/report/ReportDownload.jsx';
+import { ReportDownloadOptions } from '../components/report/ReportDownloadOptions.jsx';
 import { ReportDisplay } from '../components/report/ReportDisplay.jsx';
 import { StatusMessage } from '../components/common/StatusMessage.jsx';
 import { VersionIndicator } from '../components/common/VersionIndicator.jsx';
@@ -47,8 +47,18 @@ export const UploadPage = () => {
     }
   };
 
-  const handleDownloadReport = () => {
+  const handleDownloadJSON = () => {
     downloadReport();
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      const { reportService } = await import('../services/reportService.js');
+      await reportService.downloadPDFReport(token);
+    } catch (error) {
+      console.error('PDF download failed:', error);
+      // You could add a status message here to show the error
+    }
   };
 
   const handleLogout = () => {
@@ -137,7 +147,10 @@ export const UploadPage = () => {
         />
         
         {reportData && (
-          <ReportDownload onDownload={handleDownloadReport} />
+          <ReportDownloadOptions 
+            onDownloadJSON={handleDownloadJSON}
+            onDownloadPDF={handleDownloadPDF}
+          />
         )}
       </div>
 

@@ -22,6 +22,52 @@ export const reportService = {
     URL.revokeObjectURL(url);
   },
   
+  // Download report as PDF
+  async downloadPDFReport(token) {
+    try {
+      const response = await fetch(`${apiClient.baseURL}${ENDPOINTS.GENERATE_PDF_REPORT}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      // Get the PDF blob
+      const pdfBlob = await response.blob();
+      
+      // Create download link
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Get filename from response headers or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'bias-report.pdf';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      link.download = filename;
+      link.click();
+      
+      // Clean up
+      URL.revokeObjectURL(url);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('PDF download failed:', error);
+      throw error;
+    }
+  },
+  
   // Format report data for display
   formatReportData(reportData) {
     if (!reportData) return null;
