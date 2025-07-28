@@ -110,11 +110,14 @@ if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ZONE_ID" ]; then
         -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
         -H "Content-Type: application/json" 2>/dev/null || echo '{"success":false,"errors":[{"message":"API call failed"}]}')
     
-    HTTP_STATUS=$(echo "$DNS_RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
-    DNS_BODY=$(echo "$DNS_RESPONSE" | grep -v "HTTP_STATUS:")
+    # Parse HTTP status and response body correctly
+    HTTP_STATUS=$(echo "$DNS_RESPONSE" | tail -n1 | sed 's/HTTP_STATUS://')
+    DNS_BODY=$(echo "$DNS_RESPONSE" | head -n -1)
     
     echo "🔍 DNS Check Response Status: $HTTP_STATUS"
     echo "🔍 DNS Check Response Body: $DNS_BODY"
+    echo "🔍 Raw Response Length: $(echo "$DNS_RESPONSE" | wc -l) lines"
+    echo "🔍 Raw Response Preview: $(echo "$DNS_RESPONSE" | head -3)"
     
     if [ "$HTTP_STATUS" = "200" ] && echo "$DNS_BODY" | jq -e '.success' > /dev/null 2>&1; then
         RECORD_COUNT=$(echo "$DNS_BODY" | jq -r '.result | length // 0')
@@ -136,8 +139,8 @@ if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ZONE_ID" ]; then
                         \"proxied\": true
                     }" 2>/dev/null || echo '{"success":false,"errors":[{"message":"Update failed"}]}')
                 
-                UPDATE_HTTP_STATUS=$(echo "$UPDATE_RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
-                UPDATE_BODY=$(echo "$UPDATE_RESPONSE" | grep -v "HTTP_STATUS:")
+                UPDATE_HTTP_STATUS=$(echo "$UPDATE_RESPONSE" | tail -n1 | sed 's/HTTP_STATUS://')
+                UPDATE_BODY=$(echo "$UPDATE_RESPONSE" | head -n -1)
                 
                 echo "🔄 DNS Update Response Status: $UPDATE_HTTP_STATUS"
                 echo "🔄 DNS Update Response Body: $UPDATE_BODY"
@@ -163,8 +166,8 @@ if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ZONE_ID" ]; then
                     \"proxied\": true
                 }" 2>/dev/null || echo '{"success":false,"errors":[{"message":"Create failed"}]}')
             
-            CREATE_HTTP_STATUS=$(echo "$CREATE_RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
-            CREATE_BODY=$(echo "$CREATE_RESPONSE" | grep -v "HTTP_STATUS:")
+            CREATE_HTTP_STATUS=$(echo "$CREATE_RESPONSE" | tail -n1 | sed 's/HTTP_STATUS://')
+            CREATE_BODY=$(echo "$CREATE_RESPONSE" | head -n -1)
             
             echo "📝 DNS Create Response Status: $CREATE_HTTP_STATUS"
             echo "📝 DNS Create Response Body: $CREATE_BODY"
