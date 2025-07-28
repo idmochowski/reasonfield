@@ -95,6 +95,7 @@ export const UploadPage = () => {
       flexDirection: 'column', 
       alignItems: 'center', 
       paddingTop: '4rem', 
+      paddingBottom: '4rem',
       position: 'relative' 
     }}>
       {/* Logout button */}
