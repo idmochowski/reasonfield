@@ -49,10 +49,6 @@ export const UploadPage = () => {
     }
   };
 
-  const handleDownloadJSON = () => {
-    downloadReport();
-  };
-
   const handleDownloadPDF = async () => {
     try {
       setPdfStatus('Generating PDF...');
@@ -160,7 +156,6 @@ export const UploadPage = () => {
         
         {reportData && (
           <ReportDownloadOptions 
-            onDownloadJSON={handleDownloadJSON}
             onDownloadPDF={handleDownloadPDF}
           />
         )}

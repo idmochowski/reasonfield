@@ -1,4 +1,4 @@
-export const ReportDownloadOptions = ({ onDownloadJSON, onDownloadPDF, disabled = false }) => {
+export const ReportDownloadOptions = ({ onDownloadPDF, disabled = false }) => {
   return (
     <div style={{ 
       display: 'flex', 
@@ -15,41 +15,6 @@ export const ReportDownloadOptions = ({ onDownloadJSON, onDownloadPDF, disabled 
         flexWrap: 'wrap',
         justifyContent: 'center'
       }}>
-        {/* JSON Download Button */}
-        <button
-          style={{
-            background: '#0288d1',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            padding: '0.75rem 1.5rem',
-            fontSize: '1rem',
-            fontWeight: 600,
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            boxShadow: '0 2px 8px rgba(2,136,209,0.2)',
-            transition: 'all 0.3s ease',
-            opacity: disabled ? 0.7 : 1,
-          }}
-          onClick={onDownloadJSON}
-          disabled={disabled}
-          onMouseEnter={(e) => {
-            if (!disabled) {
-              e.target.style.background = '#0277bd';
-              e.target.style.transform = 'translateY(-1px)';
-              e.target.style.boxShadow = '0 4px 12px rgba(2,136,209,0.3)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!disabled) {
-              e.target.style.background = '#0288d1';
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 2px 8px rgba(2,136,209,0.2)';
-            }
-          }}
-        >
-          📄 Download JSON
-        </button>
-        
         {/* PDF Download Button */}
         <button
           style={{
@@ -84,16 +49,6 @@ export const ReportDownloadOptions = ({ onDownloadJSON, onDownloadPDF, disabled 
         >
           📋 Download PDF
         </button>
-      </div>
-      
-      <div style={{ 
-        fontSize: '0.85rem', 
-        color: '#666', 
-        textAlign: 'center',
-        maxWidth: '400px',
-        lineHeight: '1.4'
-      }}>
-        <strong>JSON:</strong> Raw data for further analysis | <strong>PDF:</strong> Professional report for sharing
       </div>
     </div>
   );
