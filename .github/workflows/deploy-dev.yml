@@ -1,20 +1,20 @@
-name: Deploy to Production
+name: Deploy to Development
 
-# Production deployment workflow - deploys from main branch to production URLs
+# Development deployment workflow - deploys from dev branch to development URLs
 on:
   push:
-    branches: [ main ]
+    branches: [ dev ]
   workflow_dispatch: # Allow manual triggering
 
 env:
-  BACKEND_SERVICE_NAME: reasonfield-backend
+  BACKEND_SERVICE_NAME: reasonfield-backend-dev
   BACKEND_REGION: us-central1
-  FRONTEND_PROJECT_NAME: reasonfield-frontend
-  ENVIRONMENT: production
+  FRONTEND_PROJECT_NAME: reasonfield-frontend-dev
+  ENVIRONMENT: development
 
 jobs:
-  deploy-backend:
-    name: Deploy Backend
+  deploy-backend-dev:
+    name: Deploy Backend (Dev)
     runs-on: ubuntu-latest
     
     steps:
@@ -38,11 +38,11 @@ jobs:
     - name: Configure Docker for gcloud
       run: gcloud auth configure-docker
       
-    - name: Deploy Backend to Cloud Run
+    - name: Deploy Backend to Cloud Run (Dev)
       run: |
         cd backend
-        chmod +x ../scripts/deploy-backend-github.sh
-        ../scripts/deploy-backend-github.sh
+        chmod +x ../scripts/deploy-backend-dev.sh
+        ../scripts/deploy-backend-dev.sh
       env:
         GOOGLE_CLOUD_PROJECT_ID: ${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}
         GOOGLE_CLOUD_SA_KEY: ${{ secrets.GOOGLE_CLOUD_SA_KEY }}
@@ -55,15 +55,15 @@ jobs:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
         
-    - name: Verify Backend Deployment
+    - name: Verify Backend Deployment (Dev)
       run: |
         echo "Backend deployed successfully!"
-        echo "Backend URL: https://api.reasonfield.com"
+        echo "Backend URL: https://dev-api.reasonfield.com"
         
-  deploy-frontend:
-    name: Deploy Frontend
+  deploy-frontend-dev:
+    name: Deploy Frontend (Dev)
     runs-on: ubuntu-latest
-    needs: deploy-backend # Wait for backend to deploy first
+    needs: deploy-backend-dev # Wait for backend to deploy first
     
     steps:
     - name: Checkout code
@@ -89,15 +89,15 @@ jobs:
         cd frontend
         npm run build
       env:
-        VITE_API_BASE_URL: https://api.reasonfield.com
+        VITE_API_BASE_URL: https://dev-api.reasonfield.com
         VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         VITE_APP_VERSION: ${{ github.sha }}
         
-    - name: Deploy Frontend to Cloudflare Pages
+    - name: Deploy Frontend to Cloudflare Pages (Dev)
       run: |
         cd frontend
-        chmod +x ../scripts/deploy-frontend-github.sh
-        ../scripts/deploy-frontend-github.sh
+        chmod +x ../scripts/deploy-frontend-dev.sh
+        ../scripts/deploy-frontend-dev.sh
       env:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -105,33 +105,33 @@ jobs:
         VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         VITE_APP_VERSION: ${{ github.sha }}
         
-    - name: Verify Frontend Deployment
+    - name: Verify Frontend Deployment (Dev)
       run: |
         echo "Frontend deployed successfully!"
-        echo "Frontend URL: https://app.reasonfield.com"
+        echo "Frontend URL: https://dev.reasonfield.com"
         
-  verify-deployment:
-    name: Verify Deployment
+  verify-deployment-dev:
+    name: Verify Deployment (Dev)
     runs-on: ubuntu-latest
-    needs: [deploy-backend, deploy-frontend]
+    needs: [deploy-backend-dev, deploy-frontend-dev]
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Test Backend Health
+    - name: Test Backend Health (Dev)
       run: |
         echo "Testing backend health..."
-        curl -f https://api.reasonfield.com/health || echo "Backend health check failed"
+        curl -f https://dev-api.reasonfield.com/health || echo "Backend health check failed"
         
-    - name: Test Frontend Accessibility
+    - name: Test Frontend Accessibility (Dev)
       run: |
         echo "Testing frontend accessibility..."
-        curl -f https://app.reasonfield.com || echo "Frontend accessibility check failed"
+        curl -f https://dev.reasonfield.com || echo "Frontend accessibility check failed"
         
-    - name: Deployment Summary
+    - name: Deployment Summary (Dev)
       run: |
-        echo "🎉 Deployment completed successfully!"
-        echo "📱 Frontend: https://app.reasonfield.com"
-        echo "🔧 Backend: https://api.reasonfield.com"
-        echo "🚀 Custom domains are working!" 
+        echo "🎉 Development deployment completed successfully!"
+        echo "📱 Frontend: https://dev.reasonfield.com"
+        echo "🔧 Backend: https://dev-api.reasonfield.com"
+        echo "🚀 Development environment is ready for testing!" 
