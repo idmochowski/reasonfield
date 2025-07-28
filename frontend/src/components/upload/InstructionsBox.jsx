@@ -21,7 +21,7 @@ export const InstructionsBox = () => {
           <strong>3. Generate Report:</strong> Click "Generate Report" to analyze your documents for cognitive biases using AI.
         </p>
         <p style={{ marginBottom: '0' }}>
-          <strong>4. Download Results:</strong> Currently, the report is in JSON format. We are working on a better UI for the report.
+          <strong>4. Download Results:</strong> Download your bias analysis report in PDF. This might take a minute.
         </p>
       </div>
     </div>
