@@ -64,7 +64,8 @@ echo "🚀 Deploying to Cloudflare Pages (development)..."
 wrangler pages deploy dist \
     --project-name $FRONTEND_PROJECT_NAME \
     --branch dev \
-    --commit-dirty=true
+    --commit-dirty=true \
+    --env-vars VITE_API_BASE_URL=https://dev-api.reasonfield.com,VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID,VITE_APP_VERSION=$VITE_APP_VERSION
 
 echo "✅ Development frontend deployed successfully!"
 echo "🌐 Development Domain: https://dev.reasonfield.com"
