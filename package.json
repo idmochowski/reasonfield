@@ -1,0 +1,16 @@
+{
+  "name": "reasonfield",
+  "version": "1.0.0",
+  "description": "Reasonfield - Cognitive Bias Detection Tool",
+  "scripts": {
+    "build": "./build.sh",
+    "dev": "cd frontend && npm run dev",
+    "install-deps": "cd frontend && npm ci"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "workspaces": [
+    "frontend"
+  ]
+} 
