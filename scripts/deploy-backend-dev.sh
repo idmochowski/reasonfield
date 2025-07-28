@@ -89,13 +89,28 @@ echo "🔗 Development Domain: https://dev-api.reasonfield.com"
 # Update DNS record for development domain
 echo "🔧 Updating DNS record for development domain..."
 if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ZONE_ID" ]; then
+    # Set error handling to continue on failure
+    set +e
     echo "📋 Development DNS Update Configuration:"
     echo "   Zone ID: $CLOUDFLARE_ZONE_ID"
     echo "   Target URL: $(echo $SERVICE_URL | sed 's|https://||')"
     
     # Simple DNS update - try to create the record directly
     echo "📝 Creating DNS record for dev-api.reasonfield.com..."
-    CREATE_RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records" \
+    echo "🔑 API Token (first 10 chars): ${CLOUDFLARE_API_TOKEN:0:10}..."
+    echo "🌐 Zone ID: $CLOUDFLARE_ZONE_ID"
+    echo "🎯 Target: $(echo $SERVICE_URL | sed 's|https://||')"
+    
+    # Test API connectivity first
+    echo "🔍 Testing Cloudflare API connectivity..."
+    TEST_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X GET "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID" \
+        -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+        -H "Content-Type: application/json" 2>/dev/null || echo "API_TEST_FAILED")
+    
+    echo "🔍 API Test Response: $TEST_RESPONSE"
+    
+    # Create DNS record with better error handling
+    CREATE_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records" \
         -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
         -H "Content-Type: application/json" \
         -d "{
@@ -103,12 +118,17 @@ if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ZONE_ID" ]; then
             \"name\": \"dev-api.reasonfield.com\",
             \"content\": \"$(echo $SERVICE_URL | sed 's|https://||')\",
             \"proxied\": true
-        }" 2>/dev/null)
+        }" 2>/dev/null || echo "DNS_CREATE_FAILED")
     
     echo "📝 DNS Create Response: $CREATE_RESPONSE"
     
     # Check if creation was successful or if record already exists
-    if echo "$CREATE_RESPONSE" | grep -q '"success":true'; then
+    if echo "$CREATE_RESPONSE" | grep -q "DNS_CREATE_FAILED"; then
+        echo "❌ DNS creation failed - curl command failed"
+        echo "⚠️  Manual DNS setup required:"
+        echo "   - Create CNAME record: dev-api.reasonfield.com → $(echo $SERVICE_URL | sed 's|https://||')"
+        echo "   - Enable Cloudflare proxy (orange cloud)"
+    elif echo "$CREATE_RESPONSE" | grep -q '"success":true'; then
         echo "✅ DNS record created successfully!"
     elif echo "$CREATE_RESPONSE" | grep -q 'already exists'; then
         echo "✅ DNS record already exists!"
@@ -118,12 +138,15 @@ if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ZONE_ID" ]; then
         echo "   - Create CNAME record: dev-api.reasonfield.com → $(echo $SERVICE_URL | sed 's|https://||')"
         echo "   - Enable Cloudflare proxy (orange cloud)"
     fi
-else
-    echo "⚠️  Cloudflare credentials not available. DNS update skipped."
-    echo "⚠️  Manual DNS setup required:"
-    echo "   - Create CNAME record: dev-api.reasonfield.com → $(echo $SERVICE_URL | sed 's|https://||')"
-    echo "   - Enable Cloudflare proxy (orange cloud)"
-fi
+    else
+        echo "⚠️  Cloudflare credentials not available. DNS update skipped."
+        echo "⚠️  Manual DNS setup required:"
+        echo "   - Create CNAME record: dev-api.reasonfield.com → $(echo $SERVICE_URL | sed 's|https://||')"
+        echo "   - Enable Cloudflare proxy (orange cloud)"
+    fi
+    
+    # Reset error handling
+    set -e
 
 echo "🎉 Development backend deployment completed!"
 echo "📱 Development Backend: https://dev-api.reasonfield.com"
