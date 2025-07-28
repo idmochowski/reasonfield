@@ -11,7 +11,7 @@ export const ALLOWED_FILE_TYPES = [
 export const ALLOWED_FILE_EXTENSIONS = ['.pdf', '.txt', '.docx'];
 
 // App Configuration
-export const APP_NAME = 'Reasonfield BETA';
+export const APP_NAME = 'Reasonfield Beta';
 export const APP_VERSION = import.meta.env.VITE_APP_VERSION || 'DEV';
 
 // API Endpoints
