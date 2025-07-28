@@ -79,7 +79,15 @@ jobs:
     - name: Install Frontend Dependencies
       run: |
         cd frontend
-        npm ci
+        ls -la
+        echo "Checking if package-lock.json exists..."
+        if [ -f "package-lock.json" ]; then
+          echo "package-lock.json found, using npm ci"
+          npm ci
+        else
+          echo "package-lock.json not found, using npm install"
+          npm install
+        fi
         
     - name: Install Wrangler
       run: npm install -g wrangler

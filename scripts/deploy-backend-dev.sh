@@ -89,99 +89,34 @@ echo "🔗 Development Domain: https://dev-api.reasonfield.com"
 # Update DNS record for development domain
 echo "🔧 Updating DNS record for development domain..."
 if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ZONE_ID" ]; then
-    # Check if jq is available
-    if ! command -v jq &> /dev/null; then
-        echo "⚠️  jq not available. Installing jq..."
-        apt-get update && apt-get install -y jq || {
-            echo "❌ Failed to install jq. DNS update will be skipped."
-            echo "⚠️  Manual DNS setup required:"
-            echo "   - Create CNAME record: dev-api.reasonfield.com → $(echo $SERVICE_URL | sed 's|https://||')"
-            echo "   - Enable Cloudflare proxy (orange cloud)"
-            exit 0
-        }
-    fi
     echo "📋 Development DNS Update Configuration:"
     echo "   Zone ID: $CLOUDFLARE_ZONE_ID"
     echo "   Target URL: $(echo $SERVICE_URL | sed 's|https://||')"
     
-    # Get the current DNS record for dev-api.reasonfield.com
-    echo "🔍 Checking existing DNS record for dev-api.reasonfield.com..."
-    DNS_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X GET "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records?name=dev-api.reasonfield.com" \
+    # Simple DNS update - try to create the record directly
+    echo "📝 Creating DNS record for dev-api.reasonfield.com..."
+    CREATE_RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records" \
         -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-        -H "Content-Type: application/json" 2>/dev/null || echo '{"success":false,"errors":[{"message":"API call failed"}]}')
+        -H "Content-Type: application/json" \
+        -d "{
+            \"type\": \"CNAME\",
+            \"name\": \"dev-api.reasonfield.com\",
+            \"content\": \"$(echo $SERVICE_URL | sed 's|https://||')\",
+            \"proxied\": true
+        }" 2>/dev/null)
     
-    # Parse HTTP status and response body correctly
-    HTTP_STATUS=$(echo "$DNS_RESPONSE" | tail -n1 | sed 's/HTTP_STATUS://')
-    DNS_BODY=$(echo "$DNS_RESPONSE" | head -n -1)
+    echo "📝 DNS Create Response: $CREATE_RESPONSE"
     
-    echo "🔍 DNS Check Response Status: $HTTP_STATUS"
-    echo "🔍 DNS Check Response Body: $DNS_BODY"
-    echo "🔍 Raw Response Length: $(echo "$DNS_RESPONSE" | wc -l) lines"
-    echo "🔍 Raw Response Preview: $(echo "$DNS_RESPONSE" | head -3)"
-    
-    if [ "$HTTP_STATUS" = "200" ] && echo "$DNS_BODY" | jq -e '.success' > /dev/null 2>&1; then
-        RECORD_COUNT=$(echo "$DNS_BODY" | jq -r '.result | length // 0')
-        echo "📊 Found $RECORD_COUNT existing DNS record(s) for dev-api.reasonfield.com"
-        
-        if [ "$RECORD_COUNT" -gt 0 ]; then
-            # Update existing record
-            RECORD_ID=$(echo "$DNS_BODY" | jq -r '.result[0].id // empty')
-            if [ -n "$RECORD_ID" ]; then
-                echo "🔄 Updating existing DNS record (ID: $RECORD_ID)..."
-                
-                UPDATE_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X PUT "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/$RECORD_ID" \
-                    -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-                    -H "Content-Type: application/json" \
-                    -d "{
-                        \"type\": \"CNAME\",
-                        \"name\": \"dev-api.reasonfield.com\",
-                        \"content\": \"$(echo $SERVICE_URL | sed 's|https://||')\",
-                        \"proxied\": true
-                    }" 2>/dev/null || echo '{"success":false,"errors":[{"message":"Update failed"}]}')
-                
-                UPDATE_HTTP_STATUS=$(echo "$UPDATE_RESPONSE" | tail -n1 | sed 's/HTTP_STATUS://')
-                UPDATE_BODY=$(echo "$UPDATE_RESPONSE" | head -n -1)
-                
-                echo "🔄 DNS Update Response Status: $UPDATE_HTTP_STATUS"
-                echo "🔄 DNS Update Response Body: $UPDATE_BODY"
-                
-                if [ "$UPDATE_HTTP_STATUS" = "200" ] && echo "$UPDATE_BODY" | jq -e '.success' > /dev/null 2>&1; then
-                    echo "✅ DNS record updated successfully!"
-                else
-                    echo "❌ Failed to update DNS record. Status: $UPDATE_HTTP_STATUS"
-                    echo "❌ Response: $UPDATE_BODY"
-                fi
-            else
-                echo "❌ Could not extract record ID from response"
-            fi
-        else
-            echo "📝 No existing DNS record found. Creating new record..."
-            CREATE_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records" \
-                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-                -H "Content-Type: application/json" \
-                -d "{
-                    \"type\": \"CNAME\",
-                    \"name\": \"dev-api.reasonfield.com\",
-                    \"content\": \"$(echo $SERVICE_URL | sed 's|https://||')\",
-                    \"proxied\": true
-                }" 2>/dev/null || echo '{"success":false,"errors":[{"message":"Create failed"}]}')
-            
-            CREATE_HTTP_STATUS=$(echo "$CREATE_RESPONSE" | tail -n1 | sed 's/HTTP_STATUS://')
-            CREATE_BODY=$(echo "$CREATE_RESPONSE" | head -n -1)
-            
-            echo "📝 DNS Create Response Status: $CREATE_HTTP_STATUS"
-            echo "📝 DNS Create Response Body: $CREATE_BODY"
-            
-            if [ "$CREATE_HTTP_STATUS" = "200" ] && echo "$CREATE_BODY" | jq -e '.success' > /dev/null 2>&1; then
-                echo "✅ DNS record created successfully!"
-            else
-                echo "❌ Failed to create DNS record. Status: $CREATE_HTTP_STATUS"
-                echo "❌ Response: $CREATE_BODY"
-            fi
-        fi
+    # Check if creation was successful or if record already exists
+    if echo "$CREATE_RESPONSE" | grep -q '"success":true'; then
+        echo "✅ DNS record created successfully!"
+    elif echo "$CREATE_RESPONSE" | grep -q 'already exists'; then
+        echo "✅ DNS record already exists!"
     else
-        echo "❌ Failed to check DNS records. Status: $HTTP_STATUS"
-        echo "❌ Response: $DNS_BODY"
+        echo "⚠️  DNS record creation may have failed, but continuing..."
+        echo "⚠️  Manual DNS setup may be required:"
+        echo "   - Create CNAME record: dev-api.reasonfield.com → $(echo $SERVICE_URL | sed 's|https://||')"
+        echo "   - Enable Cloudflare proxy (orange cloud)"
     fi
 else
     echo "⚠️  Cloudflare credentials not available. DNS update skipped."
