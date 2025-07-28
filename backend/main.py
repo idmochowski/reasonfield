@@ -339,7 +339,6 @@ def generate_optimized_pdf(bias_report: BiasReport, client_time: str = None) -> 
             
         story.append(Paragraph(f"<b>Total Biases Found:</b> {len(bias_report.detected_biases)}", normal_style))
         story.append(Paragraph(f"<b>Analysis Date:</b> {analysis_time}", normal_style))
-        story.append(Paragraph(f"<b>Model Used:</b> {bias_report.metadata.get('model_used', 'Gemini 2.5 Pro')}", normal_style))
         story.append(Spacer(1, 15))
         
         # Summary
@@ -471,8 +470,7 @@ def generate_weasyprint_pdf(bias_report: BiasReport, client_time: str = None) ->
             
             <div class="stats">
                 <strong>Total Biases Found:</strong> {len(bias_report.detected_biases)}<br>
-                <strong>Analysis Date:</strong> {analysis_time}<br>
-                <strong>Model Used:</strong> {bias_report.metadata.get('model_used', 'Gemini 2.5 Pro')}
+                <strong>Analysis Date:</strong> {analysis_time}
             </div>
             
             <div class="summary">
