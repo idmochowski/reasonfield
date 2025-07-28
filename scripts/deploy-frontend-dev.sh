@@ -64,8 +64,7 @@ echo "🚀 Deploying to Cloudflare Pages (development)..."
 wrangler pages deploy dist \
     --project-name $FRONTEND_PROJECT_NAME \
     --branch dev \
-    --commit-dirty=true \
-    --env-vars VITE_API_BASE_URL=https://dev-api.reasonfield.com,VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID,VITE_APP_VERSION=$VITE_APP_VERSION
+    --commit-dirty=true
 
 echo "✅ Development frontend deployed successfully!"
 echo "🌐 Development Domain: https://dev.reasonfield.com"
@@ -86,4 +85,8 @@ fi
 echo "🎉 Development frontend deployment completed!"
 echo "📱 Development Frontend: https://dev.reasonfield.com"
 echo "🔧 Development Backend: https://dev-api.reasonfield.com"
-echo "⚠️  Remember to update Google OAuth credentials to include dev.reasonfield.com" 
+echo "⚠️  Remember to update Google OAuth credentials to include dev.reasonfield.com"
+echo "⚠️  Environment variables must be set in Cloudflare Pages dashboard:"
+echo "   - VITE_API_BASE_URL: https://dev-api.reasonfield.com"
+echo "   - VITE_GOOGLE_CLIENT_ID: [Your Google Client ID]"
+echo "   - VITE_APP_VERSION: $VITE_APP_VERSION" 
